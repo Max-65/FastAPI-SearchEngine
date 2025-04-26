@@ -1,11 +1,12 @@
 from fastapi import FastAPI
 from fastapi.responses import JSONResponse
 from src.crawler import Crawler
-from config import START_URL
+from config import START_URL, REQUEST_TIMEOUT
+import httpx
 
 app = FastAPI()
 
-@app.post('/test')
+@app.post('/api/crawler')
 async def main():
     crawler = Crawler()
     try:
@@ -21,11 +22,20 @@ async def main():
             page = {
                 "id":      id,
                 "url":     url,
-                "content": content
+                "content": {
+                    'title':   content.title,
+                    'meta':    content.meta,
+                    'headers': content.headers
+                }
             }
             cached_response["pages"].append(page)
 
-        return cached_response
+        async with httpx.AsyncClient() as client:
+            await client.post(
+                'http://api-gateway/api/extractor',
+                json = cached_response,
+                timeout = REQUEST_TIMEOUT
+            )
     
     finally:
         await crawler.close()

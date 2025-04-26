@@ -3,7 +3,7 @@ from bs4 import BeautifulSoup, ResultSet, Tag
 
 from config import REQUEST_TIMEOUT, DEFAULT_AGENT, MAX_DEPTH, MAX_COUNT
 from typing import Set, Dict, TYPE_CHECKING
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 
 from src.print import log
 from src.parser import extract
@@ -18,9 +18,15 @@ class Fetched:
 
 @dataclass
 class PageContent:
-    title:   str            | None
-    meta:    ResultSet[Tag] | None
-    headers: list[str]
+    title:   str       | None
+    meta:    list[str] | None
+    headers: list[str] | None
+
+def convert_tags(tags: ResultSet[Tag]) -> list[str] | None:
+        return [
+            tag.get_text(strip=True)
+            for tag in tags
+        ] if tags else None
 
 class Crawler:
     def __init__(self):
@@ -78,7 +84,7 @@ class Crawler:
 
         self.results[url] = PageContent(
             title   = title.string if title else None,
-            meta    = meta if meta else None,
+            meta    = convert_tags(meta) if meta else None,
             headers = [h.text for h in headers]
         )
 
